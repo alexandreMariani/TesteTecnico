@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Container, Typography, Grid, Box, CircularProgress, Alert } from "@mui/material";
-import { Product } from "@/types";
+import React, { useState, useEffect, useMemo } from "react";
+import { Container, Typography, Box, CircularProgress, Alert } from "@mui/material";
+import Grid from '@mui/material/Grid';
+import { Product, Category } from "@/types";
 import { getProducts, getCategories } from "@/services/api";
 import { ProductCard } from "@/components/ProductCard";
 import { SearchBar } from "@/components/SearchBar";
@@ -12,7 +13,8 @@ import { PaginationBar } from "@/components/PaginationBar";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+
 
   // State for filters, search, pagination, and sorting
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,24 +28,6 @@ export default function Home() {
 
   const ITEMS_PER_PAGE = 10;
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    fetchProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]); // Re-fetch only when page changes here. 
-  // We don't want to re-fetch on every query type immediately without user pressing Enter,
-  // but we can listen to category changes here.
-
-  useEffect(() => {
-    // Reset page to 1 when changing category, then fetch
-    setPage(1);
-    fetchProducts(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory]);
-
   const fetchCategories = async () => {
     try {
       const cats = await getCategories();
@@ -53,24 +37,49 @@ export default function Home() {
     }
   };
 
-  const fetchProducts = async (currentPage = page, query = searchQuery) => {
-    setLoading(true);
-    setError("");
-    try {
-      const skip = (currentPage - 1) * ITEMS_PER_PAGE;
-      const response = await getProducts(ITEMS_PER_PAGE, skip, selectedCategory, query);
-      setProducts(response.products);
-      setTotalItems(response.total);
-    } catch (err) {
-      setError("Não foi possível carregar os produtos.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const skip = (page - 1) * ITEMS_PER_PAGE;
+        let sortByParam = "none";
+        let orderParam = "asc";
+
+        if (sortOrder === "title-asc") { sortByParam = "title"; orderParam = "asc" }
+        if (sortOrder === "title-desc") { sortByParam = "title"; orderParam = "desc" }
+        if (sortOrder === "price-asc") { sortByParam = "price"; orderParam = "asc" }
+        if (sortOrder === "price-desc") { sortByParam = "price"; orderParam = "desc" }
+
+        const response = await getProducts(ITEMS_PER_PAGE, skip, selectedCategory, searchQuery, sortByParam, orderParam);
+        setProducts(response.products);
+        setTotalItems(response.total);
+      } catch (err) {
+        setError("Não foi possível carregar os produtos.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [page, selectedCategory, searchQuery, sortOrder]);
 
   const handleSearch = () => {
-    setPage(1);
-    fetchProducts(1, searchQuery);
+    setPage(1); // will trigger useEffect
+  };
+
+  const handleFilterChange = (cat: string) => {
+    setSelectedCategory(cat);
+    setPage(1); // reset to page 1 on category change
+  };
+
+  const handleSortChange = (sort: SortOption) => {
+    setSortOrder(sort);
+    setPage(1); // reset to page 1 to sort globally
   };
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
@@ -98,24 +107,24 @@ export default function Home() {
 
       <Box sx={{ mb: 4, p: 3, bgcolor: '#ffffff', borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
+          <Grid xs={12} md={4}>
             <SearchBar
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               onSearch={handleSearch}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid xs={12} sm={6} md={4}>
             <FilterBar
               categories={categories}
               selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
+              setSelectedCategory={handleFilterChange}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid xs={12} sm={6} md={4}>
             <OrderBar
               sortOrder={sortOrder}
-              setSortOrder={setSortOrder}
+              setSortOrder={handleSortChange}
             />
           </Grid>
         </Grid>
@@ -141,7 +150,7 @@ export default function Home() {
         <>
           <Grid container spacing={3}>
             {sortedProducts.map((product) => (
-              <Grid item key={product.id} xs={12} sm={6} md={4} lg={3}>
+              <Grid key={product.id} xs={12} sm={6} md={4} lg={3}>
                 <ProductCard product={product} />
               </Grid>
             ))}

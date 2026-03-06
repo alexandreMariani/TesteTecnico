@@ -1,8 +1,9 @@
 import React from 'react';
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Category } from '@/types';
 
 interface FilterBarProps {
-    categories: string[];
+    categories: Category[];
     selectedCategory: string;
     setSelectedCategory: (category: string) => void;
 }
@@ -19,11 +20,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({ categories, selectedCatego
             >
                 <MenuItem value="all">Todas as Categorias</MenuItem>
                 {categories.map((category) => (
-                    <MenuItem key={category} value={category} sx={{ textTransform: 'capitalize' }}>
-                        {category}
+                    <MenuItem key={category.slug} value={category.slug} sx={{ textTransform: 'capitalize' }}>
+                        {category.name}
                     </MenuItem>
                 ))}
             </Select>
         </FormControl>
     );
 };
+
