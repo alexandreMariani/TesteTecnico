@@ -59,6 +59,7 @@ export default function Home() {
         setProducts(response.products);
         setTotalItems(response.total);
       } catch (err) {
+        console.error("Error fetching products", err);
         setError("Não foi possível carregar os produtos.");
       } finally {
         setLoading(false);
@@ -107,21 +108,21 @@ export default function Home() {
 
       <Box sx={{ mb: 4, p: 3, bgcolor: '#ffffff', borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <SearchBar
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               onSearch={handleSearch}
             />
           </Grid>
-          <Grid xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <FilterBar
               categories={categories}
               selectedCategory={selectedCategory}
               setSelectedCategory={handleFilterChange}
             />
           </Grid>
-          <Grid xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <OrderBar
               sortOrder={sortOrder}
               setSortOrder={handleSortChange}
@@ -150,7 +151,7 @@ export default function Home() {
         <>
           <Grid container spacing={3}>
             {sortedProducts.map((product) => (
-              <Grid key={product.id} xs={12} sm={6} md={4} lg={3}>
+              <Grid key={product.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                 <ProductCard product={product} />
               </Grid>
             ))}
