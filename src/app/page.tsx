@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Container, Typography, Box, CircularProgress, Alert } from "@mui/material";
 import Grid from '@mui/material/Grid';
 import { Product, Category } from "@/types";
@@ -11,16 +12,18 @@ import { FilterBar } from "@/components/FilterBar";
 import { OrderBar, SortOption } from "@/components/OrderBar";
 import { PaginationBar } from "@/components/PaginationBar";
 
-export default function Home() {
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-
-  // State for filters, search, pagination, and sorting
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [sortOrder, setSortOrder] = useState<SortOption>("none");
-  const [page, setPage] = useState(1);
+  // Initialize state from URL params or defaults
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
+  const [sortOrder, setSortOrder] = useState<SortOption>((searchParams.get("sort") as SortOption) || "none");
+  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const [totalItems, setTotalItems] = useState(0);
 
   const [loading, setLoading] = useState(false);
@@ -41,6 +44,16 @@ export default function Home() {
     fetchCategories();
   }, []);
 
+  const updateURL = (newPage: number, newCategory: string, newQuery: string, newSort: string) => {
+    const params = new URLSearchParams();
+    if (newPage > 1) params.set("page", newPage.toString());
+    if (newCategory && newCategory !== "all") params.set("category", newCategory);
+    if (newQuery) params.set("q", newQuery);
+    if (newSort && newSort !== "none") params.set("sort", newSort);
+
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
@@ -58,6 +71,10 @@ export default function Home() {
         const response = await getProducts(ITEMS_PER_PAGE, skip, selectedCategory, searchQuery, sortByParam, orderParam);
         setProducts(response.products);
         setTotalItems(response.total);
+
+        // Sync URL after fetch logic determines what to show
+        updateURL(page, selectedCategory, searchQuery, sortOrder);
+
       } catch (err) {
         console.error("Error fetching products", err);
         setError("Não foi possível carregar os produtos.");
@@ -67,6 +84,7 @@ export default function Home() {
     };
 
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, selectedCategory, searchQuery, sortOrder]);
 
   const handleSearch = () => {
@@ -166,5 +184,13 @@ export default function Home() {
         </>
       )}
     </Container>
+  );
+}
+
+export default function Home() {
+  return (
+    <React.Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}><CircularProgress /></Box>}>
+      <HomeContent />
+    </React.Suspense>
   );
 }

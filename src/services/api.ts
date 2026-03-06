@@ -1,4 +1,4 @@
-import { ProductsResponse, Category } from "@/types";
+import { Product, ProductsResponse, Category } from "@/types";
 
 const BASE_URL = "https://dummyjson.com";
 
@@ -38,6 +38,14 @@ export const getCategories = async (): Promise<Category[]> => {
     const response = await fetch(`${BASE_URL}/products/categories`);
     if (!response.ok) {
         throw new Error("Failed to fetch categories");
+    }
+    return response.json();
+};
+
+export const getProductById = async (id: string): Promise<Product> => {
+    const response = await fetch(`${BASE_URL}/products/${id}`);
+    if (!response.ok) {
+        throw new Error("Failed to fetch product details");
     }
     return response.json();
 };
